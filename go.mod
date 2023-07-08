@@ -7,6 +7,7 @@ require (
 	github.com/alexedwards/scs/postgresstore v0.0.0-20210131110750-3ca38f9a41cc
 	github.com/alexedwards/scs/v2 v2.4.0
 	github.com/aymerick/douceur v0.2.0
+	github.com/fatih/color v1.15.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/jackc/pgconn v1.8.0
 	github.com/jackc/pgx/v4 v4.10.1
@@ -22,7 +23,6 @@ require (
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/PuerkitoBio/goquery v1.6.1 // indirect
 	github.com/andybalholm/cascadia v1.2.0 // indirect
-	github.com/fatih/color v1.15.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
