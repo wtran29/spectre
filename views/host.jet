@@ -68,7 +68,7 @@ Host
 
                             <div class="mt-3 mb-3">
                                 <label for="host_name" class="form-label">Host Name</label>
-                                <input required id="host-name" name="host_name" value="{{host.HostName}}" type="text" class="form-control">
+                                <input required id="host_name" name="host_name" value="{{host.HostName}}" type="text" class="form-control">
                             </div>
                             <div class="mb-3">
                                 <label for="canonical_name" class="form-label">Canonical Name</label>
@@ -164,19 +164,140 @@ Host
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="healthy-tab" id="healthy-content">
-                    Healthy content
+                    <div class="row">
+                        <div class="col">
+                        <h3 class="mt-3">Healthy Services</h3>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Last Check</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{range host.HostServices}}
+                                        {{if .Status == "healthy"}}
+                                        <tr>
+                                            <td>{{.Service.ServiceName}}
+                                                <span class="ml-1 badge bg-secondary btn btn-secondary" onclick="checkNow({{.ID}})">
+                                                    Check Now
+                                                </span>
+                                            </td>
+                                            <td>{{.LastCheck}}</td>
+                                            <td></td>
+                                        </tr>
+                                        {{end}}
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="warning-tab" id="warning-content">
-                    Warning content
+                                    <div class="row">
+                        <div class="col">
+                        <h3 class="mt-3">Warning Services</h3>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Last Check</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{range host.HostServices}}
+                                        {{if .Status == "warning"}}
+                                        <tr>
+                                            <td>{{.Service.ServiceName}}
+                                                <span class="ml-1 badge bg-secondary btn btn-secondary" onclick="checkNow({{.ID}})">
+                                                    Check Now
+                                                </span>
+                                            </td>
+                                            <td>{{.LastCheck}}</td>
+                                            <td></td>
+                                        </tr>
+                                        {{end}}
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="problem-tab" id="problem-content">
-                    Problem content
+                                    <div class="row">
+                        <div class="col">
+                        <h3 class="mt-3">Problem Services</h3>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Last Check</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{range host.HostServices}}
+                                        {{if .Status == "problem"}}
+                                        <tr>
+                                            <td>{{.Service.ServiceName}}
+                                                <span class="ml-1 badge bg-secondary btn btn-secondary" onclick="checkNow({{.ID}})">
+                                                    Check Now
+                                                </span>
+                                            </td>
+                                            <td>{{.LastCheck}}</td>
+                                            <td></td>
+                                        </tr>
+                                        {{end}}
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="pending-tab" id="pending-content">
-                    Pending content
+                    
+                    <div class="row">
+                        <div class="col">
+                        <h3 class="mt-3">Pending Services</h3>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Last Check</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{range host.HostServices}}
+                                        {{if .Status == "pending"}}
+                                        <tr>
+                                            <td>
+                                                <span class="{{.Service.Icon}}"></span>
+                                                {{.Service.ServiceName}}
+                                                <span class="ml-1 badge bg-secondary btn btn-secondary" onclick="checkNow({{.ID}})">
+                                                    Check Now
+                                                </span>
+                                            </td>
+                                            <td>
+                                            {{if dateAfterYearOne(.LastCheck)}}
+                                                {{dateFromLayout(.LastCheck, "01-02-2006 15:04")}}
+                                            {{else}}
+                                                Pending...
+                                            {{end}}
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                        {{end}}
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 {{ end }}
@@ -255,6 +376,10 @@ Host
         if (form.checkValidity() === true) {
             form.submit();
         }
+    }
+
+    function checkNow(id) {
+        console.log("Clicked check now");
     }
 
 </script>

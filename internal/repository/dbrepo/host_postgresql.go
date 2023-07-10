@@ -278,3 +278,49 @@ func (m *postgresDBRepo) UpdateHostServiceStatus(hostID, serviceID, active int) 
 	}
 	return nil
 }
+
+func (m *postgresDBRepo) GetServicesByStatus(status string) ([]models.HostService, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `SELECT hs.id, hs.host_id, hs.service_id, hs.active, hs.schedule_number, hs.schedule_unit, hs.last_check, hs.status, hs.created_at, hs.updated_at,
+				h.host_name, s.service_name
+				FROM host_services hs
+				LEFT JOIN hosts h ON (hs.host_id = h.id)
+				LEFT JOIN services s ON (hs.service_id = s.id)
+				WHERE status = $1 AND hs.active = 1
+				ORDER BY host_name, service_name`
+
+	var services []models.HostService
+	rows, err := m.DB.QueryContext(ctx, query, status)
+	if err != nil {
+		return services, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var h models.HostService
+		err := rows.Scan(
+			&h.ID,
+			&h.HostID,
+			&h.ServiceID,
+			&h.Active,
+			&h.ScheduleNumber,
+			&h.ScheduleUnit,
+			&h.LastCheck,
+			&h.Status,
+			&h.CreatedAt,
+			&h.UpdatedAt,
+			&h.HostName,
+			&h.Service.ServiceName,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		services = append(services, h)
+	}
+
+	return services, nil
+
+}
