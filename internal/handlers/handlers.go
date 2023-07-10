@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/CloudyKit/jet/v6"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/wtran29/spectre/internal/config"
 	"github.com/wtran29/spectre/internal/driver"
 	"github.com/wtran29/spectre/internal/helpers"
