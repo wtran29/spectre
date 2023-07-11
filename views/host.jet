@@ -182,7 +182,7 @@ Host
                                         {{if .Status == "healthy"}}
                                         <tr>
                                             <td>{{.Service.ServiceName}}
-                                                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}})">
+                                                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}}, 'healthy')">
                                                     Check Now
                                                 </span>
                                             </td>
@@ -220,7 +220,7 @@ Host
                                         {{if .Status == "warning"}}
                                         <tr>
                                             <td>{{.Service.ServiceName}}
-                                                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}})">
+                                                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}}, 'warning')">
                                                     Check Now
                                                 </span>
                                             </td>
@@ -260,7 +260,7 @@ Host
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
                                                 {{.Service.ServiceName}}
-                                                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}})">
+                                                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}}, 'problem')">
                                                     Check Now
                                                 </span>
                                             </td>
