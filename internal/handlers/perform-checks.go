@@ -31,6 +31,11 @@ type jsonResp struct {
 	LastCheck     time.Time `json:"last_check"`
 }
 
+// ScheduledCheck performs scheduled check on a host service by id
+func (repo *DBRepo) ScheduledCheck(hostServiceID int) {
+
+}
+
 func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 	hostServiceID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	oldStatus := chi.URLParam(r, "oldStatus")
