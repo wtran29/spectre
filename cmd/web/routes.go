@@ -23,8 +23,6 @@ func routes() http.Handler {
 
 	mux.Get("/user/logout", handlers.Repo.Logout)
 
-	mux.Get("/pusher-test", handlers.Repo.TestPusher)
-
 	mux.Route("/pusher", func(mux chi.Router) {
 		mux.Use(Auth)
 		mux.Post("/auth", handlers.Repo.PusherAuth)
@@ -62,6 +60,8 @@ func routes() http.Handler {
 
 		// preferences
 		mux.Post("/preference/ajax/set-system-pref", handlers.Repo.SetSystemPref)
+		mux.Post("/preference/ajax/toggle-monitoring", handlers.Repo.ToggleMonitoring)
+
 		// hosts
 		mux.Get("/host/all", handlers.Repo.AllHosts)
 		mux.Get("/host/{id}", handlers.Repo.Host)
