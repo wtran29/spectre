@@ -33,7 +33,50 @@ type jsonResp struct {
 
 // ScheduledCheck performs scheduled check on a host service by id
 func (repo *DBRepo) ScheduledCheck(hostServiceID int) {
+	log.Println("********* Running check for", hostServiceID)
 
+	hs, err := repo.DB.GetHostServiceByID(hostServiceID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	h, err := repo.DB.GetHostByID(hs.HostID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	// tests the service
+	newStatus, msg := repo.testServiceForHost(h, hs)
+
+	// if the host service status has changed, broadcast to all clients
+	if newStatus != hs.Status {
+		data := make(map[string]string)
+		data["message"] = fmt.Sprintf("host service %s on %s has changed to %s", hs.Service.ServiceName, h.HostName, newStatus)
+		repo.broadcastMessage("public-channel", "host-service-status-changed", data)
+
+		// if appropriate, send email or SMS message
+
+	}
+	// update host service record in db with status (if changed) and
+	// update the last check
+	hs.Status = newStatus
+	hs.LastCheck = time.Now()
+	err = repo.DB.UpdateHostService(hs)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println("New status is", newStatus, "and msg is", msg)
+}
+
+func (repo *DBRepo) broadcastMessage(channel, messageType string, data map[string]string) {
+
+	err := app.WsClient.Trigger(channel, messageType, data)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
