@@ -71,8 +71,22 @@
         }
     };
     
-    function toggleMonitoring(enabled) {
-
+    toggleMonitoring = (enabled) => {
+        let formData = new FormData();
+        formData.append("enabled", enabled);
+        formData.append("csrf_token", "{{.CSRFToken}}");
+        let ajax = new XMLHttpRequest();
+        ajax.responseType = "json";
+        ajax.open("POST", "/admin/preference/ajax/toggle-monitoring");
+        ajax.send(formData);
+        ajax.onreadystatechange = ()=> {
+            if (ajax.readyState === 4){
+                let resp = ajax.response;
+                if (!resp.ok) {
+                errorAlert("Errors: " + resp.message);
+                }
+            }
+        }
     };
 
     let pusher = new Pusher("{{.PreferenceMap["pusher-key"]}}", {
@@ -86,9 +100,25 @@
 
     let publicChannel = pusher.subscribe("public-channel");
 
-    publicChannel.bind("test-event", function(data){
+    publicChannel.bind("app-starting", (data) =>{
         successAlert(data.message);
     });
+
+    publicChannel.bind("app-stopping", (data) =>{
+        warningAlert(data.message);
+    });
+
+    publicChannel.bind("host-service-status-changed", (data)=> {
+        successAlert(data.message);
+    });
+
+    // Things to look for
+    // - service down
+    // - service up
+    // - service status changed
+    // - schedule changes
+    // - monitoring turned off
+    // - next-run-event changes
 
     let attention = Prompt();
 
