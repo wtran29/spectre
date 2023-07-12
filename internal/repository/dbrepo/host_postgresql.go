@@ -358,9 +358,11 @@ func (m *postgresDBRepo) GetHostServiceByID(id int) (models.HostService, error) 
 	defer cancel()
 
 	query := `SELECT hs.id, hs.host_id, hs.service_id, hs.active, hs.schedule_number, hs.schedule_unit, hs.last_check,
-				hs.status, hs.created_at, hs.updated_at, s.id, s.service_name, s.active, s.icon, s.created_at, s.updated_at	
+				hs.status, hs.created_at, hs.updated_at, s.id, s.service_name, s.active, s.icon, s.created_at, s.updated_at,
+				h.host_name	
 			FROM host_services hs
 			LEFT JOIN services s ON (hs.service_id = s.id)
+			LEFT JOIN hosts h ON (h.id = hs.host_id)
 			WHERE hs.id = $1`
 
 	var hs models.HostService
@@ -384,6 +386,7 @@ func (m *postgresDBRepo) GetHostServiceByID(id int) (models.HostService, error) 
 		&hs.Service.Icon,
 		&hs.Service.CreatedAt,
 		&hs.Service.UpdatedAt,
+		&hs.HostName,
 	)
 	if err != nil {
 		log.Println(err)
