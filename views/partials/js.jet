@@ -102,16 +102,116 @@
 
     publicChannel.bind("app-starting", (data) =>{
         successAlert(data.message);
-    });
+    })
 
     publicChannel.bind("app-stopping", (data) =>{
         warningAlert(data.message);
-    });
+    })
 
     publicChannel.bind("host-service-status-changed", (data)=> {
-        successAlert(data.message);
-    });
+        attention.toast({
+            msg: data.message,
+            icon: 'info',
+            timer: 30000,
+            showCloseButton: true,
+        })
 
+        // delete host service row
+        deleteHostServiceRow(data.host_service_id);
+
+        // update tables, if they exist
+        updateHostServiceTable(data);
+        
+        
+
+    })
+
+    deleteHostServiceRow = (hostServiceID) => {
+        // remove existing table row if it exist
+        let exists = !!document.getElementById("host-service-" + hostServiceID);
+        if (exists) {
+            let row = document.getElementById("host-service-" + hostServiceID);
+            row.parentNode.removeChild(row);
+
+            // if last row, add "no services" row
+            
+            // set tables array
+            let tables = ["healthy", "pending", "warning", "problem"];
+
+            for (let i = 0; i < tables.length; i++) {
+                // check to see if table exists
+                let currentTableExists =!!document.getElementById(tables[i] + "-table");
+                if (currentTableExists) {
+                    // get reference to table
+                    let currentTable = document.getElementById(tables[i] + "-table");
+
+                    // insert "no services" row if only header row is left
+                    if (currentTable.rows.length === 1){
+                        let newRow = currentTable.tBodies[0].insertRow(-1);
+                        let newCell = newRow.insertCell(0);
+                        newCell.setAttribute("colspan", "3");
+                        newCell.innerHTML = "No services";
+                    }
+                }
+            }
+        }
+    }
+
+    updateHostServiceTable = (data) => {
+        let tableExists = !!document.getElementById(data.status + "-table");
+        if (tableExists) {
+            // get reference to correct table
+            let tableRef = document.getElementById(data.status + "-table");
+
+            // check the table we are inserting into has "no services" row
+            let tableContent = tableRef.innerHTML;
+            if (tableContent.includes("No services")) {
+                let rowCount = tableRef.rows.length;
+                for (let i = rowCount -1; i > 0; i--) {
+                    tableRef.deleteRow(i);
+                }
+            }
+
+            // insert new row and give it correct id
+            let newRow = tableRef.tBodies[0].insertRow(-1);
+            newRow.setAttribute("id", "host-service-" + data.host_service_id);
+
+            // insert the first td
+            let newCell = newRow.insertCell(0);
+            newCell.innerHTML = `<span class="${data.icon}"></span>${data.service_name}
+                <span class="ml-1 badge bg-secondary pointer" onclick="checkNow(${data.host_service_id}, '${data.status}')">
+                    Check Now
+                </span>`;
+
+            // insert the 2nd td
+            newCell = newRow.insertCell(1);
+            if (data.status !== "pending") {
+                newCell.innerHTML = `${data.last_check}`;
+            } else {
+                newCell.innerHTML = "Pending...";
+            }
+
+            // insert 3rd td (message td that is empty)
+            newRow.insertCell(2);
+            
+        }
+    }
+
+
+
+    publicChannel.bind("host-service-count-changed", function(data) {
+        let healthyCountExists = !!document.getElementById("healthy_count");
+        console.log("healthyCountExists:",healthyCountExists,data);
+        if (healthyCountExists) {
+            document.getElementById("healthy_count").innerHTML = data.healthy_count;
+            document.getElementById("problem_count").innerHTML = data.problem_count;
+            document.getElementById("pending_count").innerHTML = data.pending_count;
+            document.getElementById("warning_count").innerHTML = data.warning_count;
+            console.log("set counts...")
+        }
+        
+    })
+    
     // Things to look for
     // - service down
     // - service up

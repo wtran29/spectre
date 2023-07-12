@@ -51,10 +51,10 @@ func (repo *DBRepo) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := make(jet.VarMap)
-	vars.Set("no_pending", pending)
 	vars.Set("no_healthy", healthy)
 	vars.Set("no_warning", warning)
 	vars.Set("no_problem", problem)
+	vars.Set("no_pending", pending)
 
 	allHosts, err := repo.DB.AllHosts()
 	if err != nil {

@@ -168,8 +168,8 @@ Host
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="healthy-tab" id="healthy-content">
                     <div class="row">
                         <div class="col">
-                        <h3 class="mt-3">Healthy Services</h3>
-                            <table class="table table-striped">
+                        <h4 class="mt-3">Healthy Services</h4>
+                            <table id="healthy-table" class="table table-striped">
                                 <thead>
                                     <tr>
                                         <th>Service</th>
@@ -180,8 +180,10 @@ Host
                                 <tbody>
                                     {{range host.HostServices}}
                                         {{if .Status == "healthy"}}
-                                        <tr>
-                                            <td>{{.Service.ServiceName}}
+                                        <tr id="host-service-{{.ID}}">
+                                            <td>
+                                                <span class="{{.Service.Icon}}"></span>
+                                                {{.Service.ServiceName}}
                                                 <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}}, 'healthy')">
                                                     Check Now
                                                 </span>
@@ -206,8 +208,8 @@ Host
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="warning-tab" id="warning-content">
                                     <div class="row">
                         <div class="col">
-                        <h3 class="mt-3">Warning Services</h3>
-                            <table class="table table-striped">
+                        <h4 class="mt-3">Warning Services</h4>
+                            <table id="warning-table" class="table table-striped">
                                 <thead>
                                     <tr>
                                         <th>Service</th>
@@ -218,8 +220,10 @@ Host
                                 <tbody>
                                     {{range host.HostServices}}
                                         {{if .Status == "warning"}}
-                                        <tr>
-                                            <td>{{.Service.ServiceName}}
+                                        <tr id="host-service-{{.ID}}">
+                                            <td>
+                                                <span class="{{.Service.Icon}}"></span>
+                                                {{.Service.ServiceName}}
                                                 <span class="ml-1 badge bg-secondary pointer" onclick="checkNow({{.ID}}, 'warning')">
                                                     Check Now
                                                 </span>
@@ -244,8 +248,8 @@ Host
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="problem-tab" id="problem-content">
                                     <div class="row">
                         <div class="col">
-                        <h3 class="mt-3">Problem Services</h3>
-                            <table class="table table-striped">
+                        <h4 class="mt-3">Problem Services</h4>
+                            <table id="problem-table" class="table table-striped">
                                 <thead>
                                     <tr>
                                         <th>Service</th>
@@ -256,7 +260,7 @@ Host
                                 <tbody>
                                     {{range host.HostServices}}
                                         {{if .Status == "problem"}}
-                                        <tr>
+                                        <tr id="host-service-{{.ID}}">
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
                                                 {{.Service.ServiceName}}
@@ -285,8 +289,8 @@ Host
                     
                     <div class="row">
                         <div class="col">
-                        <h3 class="mt-3">Pending Services</h3>
-                            <table class="table table-striped">
+                        <h4 class="mt-3">Pending Services</h4>
+                            <table id="pending-table" class="table table-striped">
                                 <thead>
                                     <tr>
                                         <th>Service</th>
@@ -297,7 +301,7 @@ Host
                                 <tbody>
                                     {{range host.HostServices}}
                                         {{if .Status == "pending"}}
-                                        <tr>
+                                        <tr id="host-service-{{.ID}}">
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
                                                 {{.Service.ServiceName}}
@@ -424,8 +428,8 @@ Host
                 }
                 
             } else {
-                        errorAlert("Something went wrong");
-                    }
+                errorAlert("Something went wrong");
+            }
                 
         })
     }
