@@ -36,7 +36,27 @@
             </tr>
             </thead>
             <tbody>
-
+            
+            {{if len(events) > 0}}
+                {{range events}}
+                    <tr>
+                        <td>{{.EventType}}</td>
+                        <td>{{.HostName}}</td>
+                        <td>{{.ServiceName}}</td>
+                        <td>{{dateFromLayout(.CreatedAt, "01-02-2006, 3:04:05 PM")}}</td>
+                        <td>{{.Message}}</td>
+                    </tr>
+                {{end}}
+            {{else}}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td colspan="5">No events found</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            {{end}}
+            
             </tbody>
         </table>
     </div>
@@ -55,6 +75,7 @@
             bottom: "{info}{pager}",
             columns: [
                 {select: 3, sort: "desc"},
+                
             ],
         })
     });
