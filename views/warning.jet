@@ -39,7 +39,7 @@
                         <tr id="host-service-{{.ID}}">
                             <td><a href="/admin/host/{{.HostID}}#warning-content">{{.HostName}}</a></td>
                             <td>{{.Service.ServiceName}}</td>
-                            <td></td>
+                            <td>{{.LastMessage}}</td>
                         </tr>
                     {{ end }}
                 {{ else }}
