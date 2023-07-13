@@ -78,6 +78,7 @@ type HostService struct {
 	ScheduleUnit   string
 	Status         string
 	LastCheck      time.Time
+	LastMessage    string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	Service        Services
@@ -94,4 +95,17 @@ type Schedule struct {
 	LastRunFromHS time.Time
 	HostServiceID int
 	ScheduleText  string
+}
+
+// Event model
+type Event struct {
+	ID            int
+	EventType     string
+	HostServiceID int
+	HostID        int
+	ServiceName   string
+	HostName      string
+	Message       string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
