@@ -71,7 +71,15 @@ func (repo *DBRepo) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 
 // Events displays the events page
 func (repo *DBRepo) Events(w http.ResponseWriter, r *http.Request) {
-	err := helpers.RenderPage(w, r, "events", nil, nil)
+	events, err := repo.DB.GetAllEvents()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	data := make(jet.VarMap)
+	data.Set("events", events)
+	err = helpers.RenderPage(w, r, "events", data, nil)
 	if err != nil {
 		printTemplateError(w, err)
 	}
@@ -387,11 +395,24 @@ func (repo *DBRepo) ToggleServiceForHost(w http.ResponseWriter, r *http.Request)
 	serviceID, _ := strconv.Atoi(r.Form.Get("service_id"))
 	active, _ := strconv.Atoi(r.Form.Get("active"))
 
-	log.Println("Data:", hostID, serviceID, active)
-
 	err = repo.DB.UpdateHostServiceStatus(hostID, serviceID, active)
 	if err != nil {
 		resp.OK = false
+	}
+
+	// broadcast service has changed
+	hs, _ := repo.DB.GetHostServiceByHostIdServiceId(hostID, serviceID)
+	h, _ := repo.DB.GetHostByID(hostID)
+
+	// add or remove host service from schedule
+	if active == 1 {
+		// add to schedule
+		repo.pushScheduleChangedEvent(hs, "pending")
+		repo.pushStatusChangedEvent(h, hs, "pending")
+		repo.addToMonitorMap(hs)
+	} else {
+		// remove schedule
+		repo.removeFromMonitorMap(hs)
 	}
 
 	out, _ := json.MarshalIndent(resp, "", "	")
