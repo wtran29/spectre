@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,7 +11,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/wtran29/spectre/internal/certificateutils"
+	"github.com/wtran29/spectre/internal/channeldata"
+	"github.com/wtran29/spectre/internal/helpers"
 	"github.com/wtran29/spectre/internal/models"
+	"github.com/wtran29/spectre/internal/sms"
 )
 
 const (
@@ -181,6 +186,13 @@ func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (st
 	case HTTP:
 		msg, newStatus = testHTTPForHost(h.URL)
 		break
+	case HTTPS:
+		msg, newStatus = testHTTPSForHost(h.URL)
+		break
+
+	case SSLCertificate:
+		msg, newStatus = testSSLForHost(h.URL)
+		break
 	}
 	// broadcast to clients if appropriate
 	if hs.Status != newStatus {
@@ -204,7 +216,48 @@ func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (st
 	}
 
 	repo.pushScheduleChangedEvent(hs, newStatus)
-	// TODO - send email/sms if appropriate
+	// send email if appropriate
+	if repo.App.PreferenceMap["notify_via_email"] == "1" {
+		if hs.Status != "pending" {
+			mm := channeldata.MailData{
+				ToName:    repo.App.PreferenceMap["notify_name"],
+				ToAddress: repo.App.PreferenceMap["notify_email"],
+			}
+
+			if newStatus == "healthy" {
+				mm.Subject = fmt.Sprintf("HEALTHY: service %s on %s", hs.Service.ServiceName, hs.HostName)
+				mm.Content = template.HTML(fmt.Sprintf(`<p>Service %s on %s reported healthy status</p>
+					<p><strong>Message received: %s</p>`, hs.Service.ServiceName, hs.HostName, msg))
+			} else if newStatus == "problem" {
+				mm.Subject = fmt.Sprintf("PROBLEM: service %s on %s", hs.Service.ServiceName, hs.HostName)
+				mm.Content = template.HTML(fmt.Sprintf(`<p>Service %s on %s reported problem</p>
+					<p><strong>Message received: %s</p>`, hs.Service.ServiceName, hs.HostName, msg))
+			} else if newStatus == "warning" {
+				mm.Subject = fmt.Sprintf("WARNING: service %s on %s", hs.Service.ServiceName, hs.HostName)
+				mm.Content = template.HTML(fmt.Sprintf(`<p>Service %s on %s reported warning</p>
+					<p><strong>Message received: %s</p>`, hs.Service.ServiceName, hs.HostName, msg))
+			}
+			helpers.SendEmail(mm)
+		}
+	}
+
+	// send sms if appropriate
+	if repo.App.PreferenceMap["notify_via_sms"] == "1" {
+		to := repo.App.PreferenceMap["sms_notify_number"]
+		smsMessage := ""
+
+		if newStatus == "healthy" {
+			smsMessage = fmt.Sprintf("Service %s on %s is healthy", hs.Service.ServiceName, hs.HostName)
+		} else if newStatus == "problem" {
+			smsMessage = fmt.Sprintf("Service %s on %s reports a problem: %s", hs.Service.ServiceName, hs.HostName, msg)
+		} else if newStatus == "warning" {
+			smsMessage = fmt.Sprintf("Service %s on %s reports a warning: %s", hs.Service.ServiceName, hs.HostName, msg)
+		}
+		err := sms.SendTextTwilio(to, smsMessage, repo.App)
+		if err != nil {
+			log.Println("Error sending sms in perform-checks.go", err)
+		}
+	}
 
 	return newStatus, msg
 }
@@ -263,6 +316,89 @@ func testHTTPForHost(url string) (string, string) {
 	}
 
 	return fmt.Sprintf("%s - %s", url, resp.Status), "healthy"
+}
+
+func testHTTPSForHost(url string) (string, string) {
+	if strings.HasSuffix(url, "/") {
+		url = strings.TrimSuffix(url, "/")
+	}
+	url = strings.Replace(url, "http://", "https://", -1)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println("HTTPS error 1")
+		return fmt.Sprintf("%s - %s", url, "error connecting"), "problem"
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Println("HTTPS error 2", resp.StatusCode)
+		return fmt.Sprintf("%s - %s", url, resp.Status), "problem"
+	}
+
+	return fmt.Sprintf("%s - %s", url, resp.Status), "healthy"
+}
+
+// scanHost gets cert details from an internet host
+func scanHost(hostname string, certDetailsChannel chan certificateutils.CertificateDetails, errorsChannel chan error) {
+
+	res, err := certificateutils.GetCertificateDetails(hostname, 10)
+	if err != nil {
+		errorsChannel <- err
+	} else {
+		certDetailsChannel <- res
+	}
+}
+
+func testSSLForHost(url string) (string, string) {
+	if strings.HasPrefix(url, "https://") {
+		url = strings.Replace(url, "https://", "", -1)
+	}
+	if strings.HasPrefix(url, "http://") {
+		url = strings.Replace(url, "http://", "", -1)
+	}
+	var certDetailsChannel chan certificateutils.CertificateDetails
+	var errorsChannel chan error
+	certDetailsChannel = make(chan certificateutils.CertificateDetails, 1)
+	errorsChannel = make(chan error, 1)
+
+	var msg, newStatus string
+
+	scanHost(url, certDetailsChannel, errorsChannel)
+
+	for i, certDetailsInQueue := 0, len(certDetailsChannel); i < certDetailsInQueue; i++ {
+		certDetails := <-certDetailsChannel
+		certificateutils.CheckExpirationStatus(&certDetails, 30)
+
+		if certDetails.Expired {
+			// cert expired
+			msg = certDetails.Hostname + " has expired!"
+
+		} else if certDetails.ExpiringSoon {
+			// cert expiring soon
+			if certDetails.DaysUntilExpiration < 7 {
+				msg = certDetails.Hostname + " expiring in " + strconv.Itoa(certDetails.DaysUntilExpiration) + " days"
+				newStatus = "problem"
+			} else {
+				msg = certDetails.Hostname + " expiring in " + strconv.Itoa(certDetails.DaysUntilExpiration) + " days"
+				newStatus = "warning"
+			}
+
+		} else {
+			// cert okay
+			msg = certDetails.Hostname + " expiring in " + strconv.Itoa(certDetails.DaysUntilExpiration) + " days"
+			newStatus = "healthy"
+		}
+
+	}
+	if len(errorsChannel) > 0 {
+		fmt.Printf("There were %d error(s):\n", len(errorsChannel))
+		for i, errorsInChannel := 0, len(errorsChannel); i < errorsInChannel; i++ {
+			msg = fmt.Sprintf("%s\n", <-errorsChannel)
+		}
+		fmt.Printf("\n")
+		newStatus = "problem"
+	}
+	return msg, newStatus
 }
 
 func (repo *DBRepo) addToMonitorMap(hs models.HostService) {
