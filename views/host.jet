@@ -179,7 +179,7 @@ Host
                                 </thead>
                                 <tbody>
                                     {{range host.HostServices}}
-                                        {{if .Status == "healthy"}}
+                                        {{if .Status == "healthy" && .Active == 1}}
                                         <tr id="host-service-{{.ID}}">
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
@@ -219,7 +219,7 @@ Host
                                 </thead>
                                 <tbody>
                                     {{range host.HostServices}}
-                                        {{if .Status == "warning"}}
+                                        {{if .Status == "warning" && .Active == 1}}
                                         <tr id="host-service-{{.ID}}">
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
@@ -259,7 +259,7 @@ Host
                                 </thead>
                                 <tbody>
                                     {{range host.HostServices}}
-                                        {{if .Status == "problem"}}
+                                        {{if .Status == "problem" && .Active == 1}}
                                         <tr id="host-service-{{.ID}}">
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
@@ -300,7 +300,7 @@ Host
                                 </thead>
                                 <tbody>
                                     {{range host.HostServices}}
-                                        {{if .Status == "pending"}}
+                                        {{if .Status == "pending" && .Active == 1}}
                                         <tr id="host-service-{{.ID}}">
                                             <td>
                                                 <span class="{{.Service.Icon}}"></span>
