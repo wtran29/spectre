@@ -13,8 +13,8 @@ func (m *postgresDBRepo) InsertHost(h models.Host) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `insert into hosts (host_name, canonical_name, url, ip, ipv6, location, os, active, created_at, updated_at)
-				values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`
+	query := `INSERT INTO hosts (host_name, canonical_name, url, ip, ipv6, location, os, active, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`
 
 	var newID int
 	// for postgres you have to scan the id after calling QueryRowContext
@@ -37,12 +37,29 @@ func (m *postgresDBRepo) InsertHost(h models.Host) (int, error) {
 	}
 
 	// add host services and set to inactive
-	stmt := `INSERT INTO host_services (host_id, service_id, active, schedule_number, schedule_unit,
-				status, created_at, updated_at) VALUES ($1, 1, 0, 3, 'm', 'pending', $2, $3)`
-
-	_, err = m.DB.ExecContext(ctx, stmt, newID, time.Now(), time.Now())
+	query = `SELECT id FROM services`
+	serviceRows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
-		return newID, err
+		log.Println(err)
+		return 0, err
+	}
+	defer serviceRows.Close()
+
+	for serviceRows.Next() {
+		var svcID int
+		err := serviceRows.Scan(&svcID)
+		if err != nil {
+			log.Println(err)
+			return 0, err
+		}
+
+		stmt := `INSERT INTO host_services (host_id, service_id, active, schedule_number, schedule_unit,
+					status, created_at, updated_at) VALUES ($1, $2, 0, 3, 'm', 'pending', $3, $4)`
+
+		_, err = m.DB.ExecContext(ctx, stmt, newID, svcID, time.Now(), time.Now())
+		if err != nil {
+			return newID, err
+		}
 	}
 
 	return newID, nil
@@ -84,7 +101,8 @@ func (m *postgresDBRepo) GetHostByID(id int) (models.Host, error) {
 				s.id, s.service_name, s.active, s.icon, s.created_at, s.updated_at, hs.last_message
 			FROM host_services hs 
 			LEFT JOIN services s on (s.id = hs.service_id) 
-			WHERE host_id = $1`
+			WHERE host_id = $1
+			ORDER BY s.service_name`
 
 	rows, err := m.DB.QueryContext(ctx, query, h.ID)
 	if err != nil {
